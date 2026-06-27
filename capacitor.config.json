@@ -1,0 +1,8 @@
+{
+  "appId": "com.paisa.app",
+  "appName": "Paisa",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}

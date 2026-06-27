@@ -1,0 +1,20 @@
+{
+  "name": "paisa-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Paisa — daily spend tracker & monthly planner, with UPI/card auto-detection on Android.",
+  "type": "module",
+  "scripts": {
+    "sync:web": "node scripts/sync-web.mjs",
+    "sync": "npm run sync:web && cap sync android",
+    "build:android": "npm run sync && cap build android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/app": "^6.0.1",
+    "@capacitor/core": "^6.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2"
+  }
+}

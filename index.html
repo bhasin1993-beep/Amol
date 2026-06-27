@@ -914,6 +914,7 @@ $("scrim").addEventListener("click",e=>{ if(e.target===$("scrim")) closeAdd(); }
   if(added>0) toast("Salary added: "+inr(added));
 })();
 </script>
+<script src="paisa-auto.js"></script>
 <script>
 if("serviceWorker" in navigator){
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(()=>{}));

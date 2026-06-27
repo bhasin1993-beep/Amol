@@ -1,0 +1,63 @@
+name: Build Android APK
+
+# Builds an installable debug APK in the cloud so you don't need Android Studio.
+# After a run finishes: Actions tab -> this run -> Artifacts -> "paisa-debug-apk".
+
+on:
+  push:
+    branches:
+      - claude/app-development-angjyf
+    paths:
+      - "index.html"
+      - "paisa-auto.js"
+      - "manifest.json"
+      - "sw.js"
+      - "scripts/**"
+      - "android/**"
+      - "capacitor.config.json"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/android.yml"
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Sync web assets into the Android project
+        run: npm run sync
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: paisa-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error

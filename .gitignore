@@ -1,0 +1,18 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# Capacitor: www/ is generated from the root web files by scripts/sync-web.mjs
+www/
+
+# Android build artifacts (the android/ project source itself IS committed)
+android/.gradle/
+android/build/
+android/app/build/
+android/capacitor-cordova-android-plugins/build/
+android/local.properties
+*.apk
+*.aab
+
+# OS
+.DS_Store

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Paisa</string>
+    <string name="title_activity_main">Paisa</string>
+    <string name="package_name">com.paisa.app</string>
+    <string name="custom_url_scheme">com.paisa.app</string>
+</resources>
