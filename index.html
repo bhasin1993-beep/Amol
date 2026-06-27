@@ -258,6 +258,8 @@
 <nav class="nav" id="nav" style="display:none">
   <button data-v="today" class="on"><span class="gi">◎</span>Today</button>
   <button data-v="history"><span class="gi">≡</span>History</button>
+  <button data-v="invest"><span class="gi">▲</span>Invest</button>
+  <button data-v="coach"><span class="gi">✦</span>Coach</button>
   <button data-v="plan"><span class="gi">◇</span>Plan</button>
 </nav>
 
@@ -756,6 +758,8 @@ function render(){
   const root = $("root");
   if(curView==="today") root.innerHTML = `<div class="view on">${viewToday()}</div>`;
   else if(curView==="history") root.innerHTML = `<div class="view on">${viewHistory()}</div>`;
+  else if(curView==="invest" && window.PaisaInvest){ root.innerHTML = `<div class="view on">${PaisaInvest.view()}</div>`; if(PaisaInvest.afterRender) PaisaInvest.afterRender(); }
+  else if(curView==="coach" && window.PaisaCoach){ root.innerHTML = `<div class="view on">${PaisaCoach.view()}</div>`; if(PaisaCoach.afterRender) PaisaCoach.afterRender(); }
   else root.innerHTML = `<div class="view on">${viewPlan()}</div>`;
   if(curView==="plan") wirePlanLive();
   window.scrollTo(0,0);
@@ -879,6 +883,7 @@ async function commitAdd(){
   S.balance = (+S.balance||0) - t.amount;
   await saveTx(); await saveSettings();
   closeAdd(); toast(inr(t.amount)+" added"); render();
+  if(window.PaisaCoach && PaisaCoach.onSpend) PaisaCoach.onSpend(t);
 }
 async function delTx(id){
   const t = TX.find(x=>x.id===id); if(!t) return;
@@ -914,6 +919,8 @@ $("scrim").addEventListener("click",e=>{ if(e.target===$("scrim")) closeAdd(); }
   if(added>0) toast("Salary added: "+inr(added));
 })();
 </script>
+<script src="paisa-invest.js"></script>
+<script src="paisa-coach.js"></script>
 <script src="paisa-auto.js"></script>
 <script>
 if("serviceWorker" in navigator){

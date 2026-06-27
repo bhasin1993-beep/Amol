@@ -208,6 +208,7 @@
     saveTx(); saveSettings();
     dismiss(detected, true);
     if (typeof render === "function") render();
+    if (window.PaisaCoach && window.PaisaCoach.onSpend) window.PaisaCoach.onSpend(t);
   }
 
   function dismiss(detected, silent) {

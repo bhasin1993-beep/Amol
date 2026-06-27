@@ -11,6 +11,8 @@ const www = join(root, "www");
 const FILES = [
   "index.html",
   "paisa-auto.js",
+  "paisa-invest.js",
+  "paisa-coach.js",
   "manifest.json",
   "sw.js",
   "icon-192.png",
