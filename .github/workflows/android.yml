@@ -20,6 +20,9 @@ on:
       - ".github/workflows/android.yml"
   workflow_dispatch: {}
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -61,3 +64,20 @@ jobs:
           name: paisa-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      - name: Rename APK for release
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk paisa.apk
+
+      - name: Publish APK to a GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Paisa APK (build ${{ github.run_number }})
+          body: |
+            Installable debug APK for Paisa — daily spend tracker, planner,
+            investments, coach, and UPI/card SMS auto-detection.
+
+            Direct download (always latest):
+            https://github.com/${{ github.repository }}/releases/latest/download/paisa.apk
+          files: paisa.apk
+          make_latest: true
