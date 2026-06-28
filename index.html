@@ -258,6 +258,7 @@
 <nav class="nav" id="nav" style="display:none">
   <button data-v="today" class="on"><span class="gi">◎</span>Today</button>
   <button data-v="history"><span class="gi">≡</span>History</button>
+  <button data-v="cards"><span class="gi">💳</span>Cards</button>
   <button data-v="invest"><span class="gi">▲</span>Invest</button>
   <button data-v="coach"><span class="gi">✦</span>Coach</button>
   <button data-v="plan"><span class="gi">◇</span>Plan</button>
@@ -282,6 +283,8 @@ let S = null;          // settings
 let TX = [];           // transactions
 let curView = "today";
 let addCat = "food";
+let addMethod = "cash";   // cash | upi | card
+let addCardId = "";       // which credit card, when addMethod==="card"
 
 const inr = n => "₹" + Math.round(n||0).toLocaleString("en-IN");
 const inrSigned = n => (n<0?"-₹":"₹") + Math.abs(Math.round(n||0)).toLocaleString("en-IN");
@@ -383,9 +386,10 @@ function compute(){
   const daysLeft = daysInMonth - dayOfMonth + 1;
 
   const mk = monthKey();
-  const monthTx = TX.filter(t => monthKey(t.date)===mk);
+  // Settlements (credit-card bill payments) are not spending — exclude them.
+  const monthTx = TX.filter(t => monthKey(t.date)===mk && !t.settle);
   const spentMonth = monthTx.reduce((t,x)=>t+(+x.amount||0),0);
-  const spentToday = TX.filter(t=>t.date===todayStr()).reduce((t,x)=>t+(+x.amount||0),0);
+  const spentToday = TX.filter(t=>t.date===todayStr() && !t.settle).reduce((t,x)=>t+(+x.amount||0),0);
 
   const remainingMonth = discretionary - spentMonth;
   const baselineDaily = daysInMonth ? discretionary/daysInMonth : 0;
@@ -458,7 +462,7 @@ function viewToday(){
   const over = c.safeToday < 0;
   const monthFrac = c.discretionary>0 ? Math.min(c.spentMonth/c.discretionary,1) : 0;
   const monthPct = Math.round(monthFrac*100);
-  const todayTx = TX.filter(t=>t.date===todayStr()).sort((a,b)=>b.ts-a.ts);
+  const todayTx = TX.filter(t=>t.date===todayStr() && !t.settle).sort((a,b)=>b.ts-a.ts);
   const soon = emiTimeline().filter(e=>!e.ended && e.months<=3 && e.months>=0).sort((a,b)=>a.months-b.months)[0];
   const freeHTML = soon ? `<div class="freecard"><span class="e">🎉</span>
     <div class="t"><b>${esc(soon.name)}</b> finishes ${fmtMonth(soon.end)}${soon.months<=0?" (this month)":` — ${soon.months} month${soon.months>1?'s':''} to go`}, freeing up <b>+${inr(soon.amount)}/month</b>.</div></div>` : "";
@@ -537,8 +541,8 @@ function viewHistory(){
   const cats = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
   const maxV = cats.length ? cats[0][1] : 1;
 
-  // group all tx by date desc
-  const sorted = [...TX].sort((a,b)=>b.ts-a.ts);
+  // group all tx by date desc (exclude card bill payments — shown in Cards tab)
+  const sorted = [...TX].filter(t=>!t.settle).sort((a,b)=>b.ts-a.ts);
   const groups = {};
   sorted.forEach(t=>{ (groups[t.date]=groups[t.date]||[]).push(t); });
   const dates = Object.keys(groups).sort((a,b)=>b.localeCompare(a));
@@ -758,6 +762,7 @@ function render(){
   const root = $("root");
   if(curView==="today") root.innerHTML = `<div class="view on">${viewToday()}</div>`;
   else if(curView==="history") root.innerHTML = `<div class="view on">${viewHistory()}</div>`;
+  else if(curView==="cards" && window.PaisaCards){ root.innerHTML = `<div class="view on">${PaisaCards.view()}</div>`; if(PaisaCards.afterRender) PaisaCards.afterRender(); }
   else if(curView==="invest" && window.PaisaInvest){ root.innerHTML = `<div class="view on">${PaisaInvest.view()}</div>`; if(PaisaInvest.afterRender) PaisaInvest.afterRender(); }
   else if(curView==="coach" && window.PaisaCoach){ root.innerHTML = `<div class="view on">${PaisaCoach.view()}</div>`; if(PaisaCoach.afterRender) PaisaCoach.afterRender(); }
   else root.innerHTML = `<div class="view on">${viewPlan()}</div>`;
@@ -850,8 +855,14 @@ async function savePlan(){
 }
 
 /* ---------- add expense modal ---------- */
+const METHODS = [{id:"cash",e:"💵",n:"Cash"},{id:"upi",e:"📲",n:"UPI"},{id:"card",e:"💳",n:"Card"}];
+function cardOptionsHTML(){
+  const cards = (window.PaisaCards && PaisaCards.list) ? PaisaCards.list() : [];
+  if(!cards.length) return `<option value="">(add cards in the Cards tab)</option>`;
+  return cards.map(c=>`<option value="${c.id}">${esc(c.name)}${c.last4?" ••"+esc(c.last4):""}</option>`).join("");
+}
 function openAdd(){
-  addCat="food";
+  addCat="food"; addMethod="cash"; addCardId="";
   $("scrim").innerHTML = `<div class="sheet">
     <h3>Add expense <button class="x" onclick="closeAdd()">✕</button></h3>
     <div class="catgrid" id="catGrid">
@@ -861,6 +872,15 @@ function openAdd(){
     <div class="field"><label>Amount</label>
       <div class="rsfield"><span class="rs">₹</span>
       <input id="a_amt" class="inp with-rs num" inputmode="decimal" placeholder="0" autofocus></div>
+    </div>
+    <div class="field"><label>Paid via</label>
+      <div class="catgrid" id="methGrid" style="grid-template-columns:repeat(3,1fr)">
+        ${METHODS.map(m=>`<div class="catchip ${m.id===addMethod?'sel':''}" data-m="${m.id}" onclick="pickMethod('${m.id}')">
+          <span class="e">${m.e}</span>${m.n}</div>`).join("")}
+      </div>
+      <div id="cardRow" style="display:none;margin-top:8px">
+        <select id="a_card" class="inp">${cardOptionsHTML()}</select>
+      </div>
     </div>
     <div class="field"><label>Note <span style="color:var(--faint)">(optional)</span></label>
       <input id="a_note" class="inp" placeholder="e.g. lunch with team"></div>
@@ -872,23 +892,35 @@ function openAdd(){
   setTimeout(()=>{const a=$("a_amt"); if(a)a.focus();},120);
 }
 function pickCat(id){ addCat=id; document.querySelectorAll("#catGrid .catchip").forEach(ch=>ch.classList.toggle("sel",ch.dataset.c===id)); }
+function pickMethod(m){
+  addMethod=m;
+  document.querySelectorAll("#methGrid .catchip").forEach(ch=>ch.classList.toggle("sel",ch.dataset.m===m));
+  const cr=$("cardRow"); if(cr) cr.style.display = (m==="card") ? "block" : "none";
+}
 function closeAdd(){ $("scrim").classList.remove("on"); $("scrim").innerHTML=""; }
 async function commitAdd(){
   const amt = parseFloat($("a_amt").value);
   if(!amt || amt<=0){ toast("Enter an amount"); return; }
+  const method = addMethod || "cash";
+  const cardId = method==="card" ? (($("a_card") && $("a_card").value) || "") : "";
   const t = { id:"t"+Date.now()+Math.random().toString(36).slice(2,6),
     amount:Math.round(amt*100)/100, category:addCat,
-    note:$("a_note").value.trim(), date:$("a_date").value||todayStr(), ts:Date.now() };
+    note:$("a_note").value.trim(), date:$("a_date").value||todayStr(), ts:Date.now(),
+    method:method, cardId:cardId };
   TX.push(t);
-  S.balance = (+S.balance||0) - t.amount;
+  // Credit-card swipes don't leave your bank yet — balance drops when you pay the bill.
+  if(method!=="card") S.balance = (+S.balance||0) - t.amount;
   await saveTx(); await saveSettings();
-  closeAdd(); toast(inr(t.amount)+" added"); render();
+  closeAdd();
+  toast(inr(t.amount)+(method==="card"?" on card":" added")); render();
   if(window.PaisaCoach && PaisaCoach.onSpend) PaisaCoach.onSpend(t);
 }
 async function delTx(id){
   const t = TX.find(x=>x.id===id); if(!t) return;
   TX = TX.filter(x=>x.id!==id);
-  S.balance = (+S.balance||0) + (+t.amount||0);
+  // Card swipes never touched the bank balance; everything else (incl. bill
+  // settlements, which reduced balance) is reversed here.
+  if(t.method!=="card") S.balance = (+S.balance||0) + (+t.amount||0);
   await saveTx(); await saveSettings(); render();
 }
 
@@ -919,6 +951,7 @@ $("scrim").addEventListener("click",e=>{ if(e.target===$("scrim")) closeAdd(); }
   if(added>0) toast("Salary added: "+inr(added));
 })();
 </script>
+<script src="paisa-cards.js"></script>
 <script src="paisa-invest.js"></script>
 <script src="paisa-coach.js"></script>
 <script src="paisa-auto.js"></script>

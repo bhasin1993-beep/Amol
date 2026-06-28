@@ -13,6 +13,7 @@ const FILES = [
   "paisa-auto.js",
   "paisa-invest.js",
   "paisa-coach.js",
+  "paisa-cards.js",
   "manifest.json",
   "sw.js",
   "icon-192.png",

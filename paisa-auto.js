@@ -56,7 +56,7 @@
 
   // Hard skips — never an expense. NOTE: balance phrases like "Avl bal" are
   // intentionally NOT here, because genuine debit SMS routinely append them.
-  var SKIP = /\b(otp|one[\s-]?time pass|is your|will be (?:debited|credited)|has been requested|requested money|has requested|collect request|failed|declined|unsuccessful|reversed|e-?mandate|autopay (?:set|reg)|min(?:imum)? (?:amt|amount)? ?due|amount due|due on|e-?statement|reward points|do not share|never share)\b/i;
+  var SKIP = /\b(otp|one[\s-]?time pass|is your|will be (?:debited|credited)|has been requested|requested money|has requested|collect request|failed|declined|unsuccessful|reversed|e-?mandate|autopay (?:set|reg)|min(?:imum)? (?:amt|amount)? ?due|amount due|due on|e-?statement|reward points|do not share|never share|emi|payment received|received towards|towards your (?:credit )?card|card bill|thank you for (?:your )?payment|payment of .{0,30}(?:received|credited))\b/i;
 
   var CREDIT = /\b(credited|received|deposited|refund(?:ed)?|cashback|salary|reversal|added to)\b/i;
   var DEBIT  = /\b(debited|spent|paid|sent|withdrawn|withdrawal|purchase[d]?|deducted|charged|txn of|transaction of|payment of|debit)\b/i;
@@ -135,11 +135,17 @@
 
     var merchant = parseMerchant(body);
     var account = parseAccount(body);
+    // credit card vs UPI/bank
+    var isCard = /\bcredit card\b|\bcard ending\b|\bcard no\b|\bcard xx\b|on your .{0,20}card\b|\bcc\b/i.test(body);
+    var last4 = (account.match(/\d{3,4}$/) || [""])[0];
+    var cardId = (isCard && window.PaisaCards && window.PaisaCards.byLast4) ? window.PaisaCards.byLast4(last4) : "";
     return {
       amount: Math.round(amount * 100) / 100,
       type: "debit",
       merchant: merchant,
       account: account,
+      method: isCard ? "card" : "upi",
+      cardId: cardId,
       ts: sms.date ? +sms.date : Date.now(),
       category: guessCategory(merchant, body),
       address: sms.address || "",
@@ -200,11 +206,14 @@
       note: note,
       date: tsToDateStr(detected.ts),
       ts: detected.ts || Date.now(),
+      method: detected.method || "upi",
+      cardId: detected.cardId || "",
       auto: true
     };
     if (typeof TX === "undefined") return; // app not booted
     TX.push(t);
-    S.balance = (+S.balance || 0) - t.amount;
+    // Card swipes don't leave the bank until the bill is paid (see Cards tab).
+    if (t.method !== "card") S.balance = (+S.balance || 0) - t.amount;
     saveTx(); saveSettings();
     dismiss(detected, true);
     if (typeof render === "function") render();
