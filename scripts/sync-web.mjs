@@ -14,6 +14,7 @@ const FILES = [
   "paisa-invest.js",
   "paisa-coach.js",
   "paisa-cards.js",
+  "paisa-backup.js",
   "manifest.json",
   "sw.js",
   "icon-192.png",

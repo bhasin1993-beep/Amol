@@ -1,5 +1,5 @@
-const CACHE = "paisa-v4";
-const ASSETS = ["index.html", "paisa-auto.js", "paisa-invest.js", "paisa-coach.js", "paisa-cards.js", "manifest.json", "icon-192.png", "icon-512.png"];
+const CACHE = "paisa-v5";
+const ASSETS = ["index.html", "paisa-auto.js", "paisa-invest.js", "paisa-coach.js", "paisa-cards.js", "paisa-backup.js", "manifest.json", "icon-192.png", "icon-512.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
 });

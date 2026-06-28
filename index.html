@@ -707,6 +707,13 @@ function viewPlan(){
 
   <button class="save-btn" onclick="savePlan()">Save plan</button>
   <div class="hint">Recommended daily spend = whatever's left of your variable budget ÷ days left in the month. Spend more today and tomorrow's number quietly shrinks; spend less and it grows. That's the whole trick.</div>
+
+  <div class="section-t">Backup &amp; restore</div>
+  <div class="card" style="padding:14px">
+    <div style="color:var(--muted);font-size:13px;line-height:1.5;margin-bottom:10px">Save all your Paisa data to a file before reinstalling or switching phones, then restore it. Everything stays on your device.</div>
+    <button class="save-btn" style="margin:0 0 8px" onclick="PaisaBackup && PaisaBackup.exportData()">⬇ Back up my data</button>
+    <button class="save-btn" style="margin:0;background:var(--surf2);color:var(--ink);border:1px solid var(--line2)" onclick="PaisaBackup && PaisaBackup.openRestore()">⬆ Restore from backup</button>
+  </div>
   <div style="height:8px"></div>`;
 }
 
@@ -954,6 +961,7 @@ $("scrim").addEventListener("click",e=>{ if(e.target===$("scrim")) closeAdd(); }
 <script src="paisa-cards.js"></script>
 <script src="paisa-invest.js"></script>
 <script src="paisa-coach.js"></script>
+<script src="paisa-backup.js"></script>
 <script src="paisa-auto.js"></script>
 <script>
 if("serviceWorker" in navigator){
