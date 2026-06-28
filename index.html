@@ -269,7 +269,24 @@
     opacity:0;transition:.3s;z-index:80;pointer-events:none;font-family:var(--disp)}
   .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
   .loading{display:grid;place-items:center;height:80vh;color:var(--muted);font-family:var(--disp)}
+  .brandbar{display:none;align-items:center;justify-content:space-between;padding:16px 18px 6px}
+  .brandbar.on{display:flex;animation:fade .3s ease}
+  .brand{display:flex;align-items:center;gap:9px}
+  .brand .bmark{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+    background:radial-gradient(120% 120% at 50% 0%, #1b2330, #0c1018);
+    border:1px solid rgba(210,167,94,.35);
+    font-family:Georgia,serif;font-weight:600;font-size:16px;
+    color:transparent;background-clip:padding-box;position:relative}
+  .brand .bmark span{background:linear-gradient(180deg,#EFCE8A,#C8993F);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .brand .bname{font-family:var(--disp);font-weight:600;font-size:19px;letter-spacing:.01em;color:var(--ink)}
+  .brand .bname b{color:var(--brass);font-weight:600}
+  .brandbar .bmon{font-family:var(--disp);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
 </style>
+
+<header class="brandbar" id="brandbar">
+  <div class="brand"><span class="bmark"><span>₹</span></span><span class="bname">Pais<b>a</b></span></div>
+  <span class="bmon" id="brandMon"></span>
+</header>
 
 <div id="root"><div class="loading">Loading your money…</div></div>
 
@@ -974,6 +991,8 @@ $("scrim").addEventListener("click",e=>{ if(e.target===$("scrim")) closeAdd(); }
   migrate();
   const added = applySalaryCredits();
   $("nav").style.display="flex";
+  const bb=$("brandbar"); if(bb) bb.classList.add("on");
+  const bm=$("brandMon"); if(bm) bm.textContent = new Date().toLocaleDateString("en-IN",{month:"long",year:"numeric"});
   curView = S.setupDone ? "today" : "today";
   go("today");
   if(added>0) toast("Salary added: "+inr(added));
